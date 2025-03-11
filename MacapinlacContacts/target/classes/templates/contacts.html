@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Google Contacts</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/js/all.min.js"></script>
+</head>
+<body class="bg-gray-900 text-gray-200">
+    <div class="container mx-auto p-6">
+        <h1 class="text-3xl font-bold text-center text-teal-400 mb-6">Your Google Contacts</h1>
+
+        <div class="bg-gray-800 shadow-lg rounded-lg overflow-hidden">
+            <table class="w-full table-auto text-center">
+                <thead class="bg-teal-600 text-white">
+                    <tr>
+                        <th class="px-6 py-3">Name</th>
+                        <th class="px-6 py-3">Email</th>
+                        <th class="px-6 py-3">Phone</th>
+                        <th class="px-6 py-3">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr th:each="contact : ${contacts}" class="border-b border-gray-700 hover:bg-gray-700">
+                        <td class="px-6 py-4" th:text="${contact.names != null and contact.names.size() > 0 ? contact.names[0].displayName : '-'}"></td>
+                        <td class="px-6 py-4" th:text="${contact.emailAddresses != null and contact.emailAddresses.size() > 0 ? contact.emailAddresses[0].value : '-'}"></td>
+                        <td class="px-6 py-4" th:text="${contact.phoneNumbers != null and contact.phoneNumbers.size() > 0 ? contact.phoneNumbers[0].value : '-'}"></td>
+                        <td class="px-6 py-4 space-x-2">
+                            <form action="/contacts/delete" method="post" class="inline-block" onsubmit="return confirmDelete()">
+                                <input type="hidden" name="resourceName" th:value="${contact.resourceName}" />
+                                <button type="submit" class="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600">
+                                    <i class="fas fa-trash-alt"></i> Delete
+                                </button>
+                            </form>
+                            <button type="button" onclick="openModal(this)" class="px-4 py-2 bg-teal-500 text-white rounded-lg hover:bg-teal-600">
+                                <i class="fas fa-edit"></i> Update
+                            </button>
+                        </td>
+                    </tr>
+                    <!-- Show message when no contacts are available -->
+                    <tr th:if="${#lists.isEmpty(contacts)}">
+                        <td colspan="4" class="px-6 py-4 text-gray-400 text-center">No contacts found.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Add Contact Button -->
+        <div class="text-center mt-6">
+            <button onclick="openAddModal()" class="px-6 py-3 bg-teal-500 text-white rounded-lg hover:bg-teal-600">
+                <i class="fas fa-plus"></i> Add New Contact
+            </button>
+        </div>
+
+        <!-- Add Contact Modal -->
+        <div id="addModal" class="fixed inset-0 bg-gray-900 bg-opacity-50 hidden flex justify-center items-center">
+            <div class="bg-gray-800 p-6 rounded-lg shadow-lg w-96">
+                <h2 class="text-xl font-semibold mb-4 text-teal-400">Add New Contact</h2>
+                <form action="/add" method="post" class="space-y-4">
+                    <input type="text" name="name" placeholder="Full Name" required class="w-full px-4 py-2 bg-gray-700 text-white border border-gray-600 rounded-lg focus:ring focus:ring-teal-400">
+                    <input type="email" name="email" placeholder="Email Address" class="w-full px-4 py-2 bg-gray-700 text-white border border-gray-600 rounded-lg focus:ring focus:ring-teal-400">
+                    <input type="text" name="phone" placeholder="Phone Number" class="w-full px-4 py-2 bg-gray-700 text-white border border-gray-600 rounded-lg focus:ring focus:ring-teal-400">
+                    <div class="flex justify-between">
+                        <button type="button" onclick="closeAddModal()" class="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600">Cancel</button>
+                        <button type="submit" class="px-4 py-2 bg-teal-500 text-white rounded-lg hover:bg-teal-600">Add</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Update Contact Modal -->
+        <div id="updateModal" class="fixed inset-0 bg-gray-900 bg-opacity-50 hidden flex justify-center items-center">
+            <div class="bg-gray-800 p-6 rounded-lg shadow-lg w-96">
+                <h2 class="text-xl font-semibold mb-4 text-teal-400">Update Contact</h2>
+                <form action="/contacts/update" method="post" class="space-y-4" onsubmit="return confirmUpdate()">
+                    <input type="hidden" name="resourceName" id="updateResourceName">
+                    <input type="text" name="name" placeholder="New Name" required class="w-full px-4 py-2 bg-gray-700 text-white border border-gray-600 rounded-lg focus:ring focus:ring-teal-400">
+                    <input type="email" name="email" placeholder="New Email" class="w-full px-4 py-2 bg-gray-700 text-white border border-gray-600 rounded-lg focus:ring focus:ring-teal-400">
+                    <input type="text" name="phone" placeholder="New Phone" class="w-full px-4 py-2 bg-gray-700 text-white border border-gray-600 rounded-lg focus:ring focus:ring-teal-400">
+                    <div class="flex justify-between">
+                        <button type="button" onclick="closeModal()" class="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600">Cancel</button>
+                        <button type="submit" class="px-4 py-2 bg-teal-500 text-white rounded-lg hover:bg-teal-600">Update</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function openModal(button) {
+            document.getElementById("updateModal").classList.remove("hidden");
+            let resourceName = button.parentElement.querySelector("input[name='resourceName']").value;
+            document.getElementById("updateResourceName").value = resourceName;
+        }
+
+        function closeModal() {
+            document.getElementById("updateModal").classList.add("hidden");
+        }
+
+        function openAddModal() {
+            document.getElementById("addModal").classList.remove("hidden");
+        }
+
+        function closeAddModal() {
+            document.getElementById("addModal").classList.add("hidden");
+        }
+
+        function confirmDelete() {
+            return confirm("Are you sure you want to delete this contact?");
+        }
+
+        function confirmUpdate() {
+            return confirm("Are you sure you want to update this contact?");
+        }
+
+        // Display a success message (Example usage: Call from backend)
+        function showSuccessMessage(message) {
+            alert(message);
+        }
+    </script>
+</body>
+</html>
